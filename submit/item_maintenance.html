@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Item maintenance</title>
+</head>
+<body>
+    <nav>
+        <a href="./index.html">Homeに戻る</a>
+    </nav>
+
+    <h1>商品データメンテナンス</h1>
+    <table>
+        <tr>
+          <th>JAN コード:</th>
+          <td><input type="text" id="jan_code"><button id="search_item">Search</button></td>
+        </tr>
+        <tr>
+          <th>商品名:</th>
+          <td><input type="text" id="item_desc"></td>
+        </tr>
+        <tr>
+          <th>金額:</th>
+          <td><input type="number" id="item_price"></td>
+        </tr>
+      </table>
+
+    <button id="submit_btn">Submit</button>
+
+    <!-- JQuery -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <!-- JQuery -->
+
+
+    <!--** 以下Firebase **-->
+    <script type="module">
+
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
+        import { getDatabase, ref, push, set, onChildAdded, remove, onChildRemoved, child, get } 
+        from "https://www.gstatic.com/firebasejs/9.6.10/firebase-database.js";
+
+        // TODO: Add SDKs for Firebase products that you want to use
+        // https://firebase.google.com/docs/web/setup#available-libraries
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            authDomain: "XXXX-XXXXXX.firebaseapp.com",
+            databaseURL: "https://XXXX-XXXXXX-default-rtdb.firebaseio.com",
+            projectId: "XXXX-XXXXXX",
+            storageBucket: "XXXX-XXXXXX.appspot.com",
+            messagingSenderId: "XXXXXXXXXXXX",
+            appId: "X:XXXXXXXXXXXX:web:XXXXXXXXXXXXXXXXXXXXXX"
+        };
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app); //RealtimeDBに接続
+
+
+        //送信
+        $("#submit_btn").on("click", function(){
+            const jan = $("#jan_code").val();
+            confirm(`${jan}を更新します。よろしいですか？`);
+
+            const dbRef = ref(db,`items/${jan}`); //RealtimeDB内の”chat”を使う
+            
+            const msg ={
+                desc : $("#item_desc").val(),
+                price : $("#item_price").val()
+            }
+
+            set(dbRef,msg); //Post to Firebase
+
+            confirm(`${jan}を更新しました。`);
+
+        });
+
+        //商品検索 (Key:　JAN コード)
+        $("#search_item").on("click", function(){
+            const jan = $("#jan_code").val();
+            if(jan==""){
+                alert("検索エラー: 検索するJANコードを入力してください");
+            } else{
+                const dbRef = ref(getDatabase());
+                get(child(dbRef, `items/${jan}`)).then((snapshot) => {
+                    console.log(snapshot)
+                    if (snapshot.exists()) {
+                        $("#item_desc").val(snapshot.val().desc);
+                        $("#item_price").val(snapshot.val().price);
+                        
+                    } else {
+                        console.log("No data available");
+                        alert("データが登録されていません")
+                    }
+                    }).catch((error) => {
+                    console.error(error);
+                });
+            }
+        });
+        </script>
+    
+</body>
+</html>

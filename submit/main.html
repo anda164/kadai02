@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/style.css" />
+    <title>お買い物ゴルフ - Main</title>
+</head>
+<body>
+    <nav>
+        <a href="./item_maintenance.html">商品登録・更新</a>
+    </nav>
+    <h1>お買い物ゴルフ</h1>
+    <h2>スキャンdeショット！！</h2>
+
+    <div id="photo-area" class="viewport"></div>
+
+    <div id="budget"></div>
+
+     
+    <div id="jan"></div>
+    <div id="shopping_list"></div>
+    <h3>ルール：</h3>
+    <ol>
+        <li>商品のバーコードを読み込み、商品の金額で飛距離を稼げ!!</li>
+        <li>合計金額がコース¥ardを超え、残り距離がマイナスになった場合は、スキャンした値を加算</li>
+        <li>最終的に合計金額をコース¥ardに合わせてホールアウト</li>
+        <li>残り距離は、1の位で四捨五入で表示</li>
+        <li>バーコードスキャン一回(メッセージ確認)につき一打加算、カップイン時の打数が少ない方が勝ち</li>
+
+    </ol>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.js" integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk=" crossorigin="anonymous"></script>
+
+    <script src="js/quagga.js" type="text/javascript"></script>
+
+    <script src="js/janken.js" type="text/javascript"></script>
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
+        import { getDatabase, ref, push, set, onChildAdded, remove, onChildRemoved, child, get } 
+        from "https://www.gstatic.com/firebasejs/9.6.10/firebase-database.js";
+
+        // TODO: Add SDKs for Firebase products that you want to use
+        // https://firebase.google.com/docs/web/setup#available-libraries
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            authDomain: "XXXX-XXXXXX.firebaseapp.com",
+            databaseURL: "https://XXXX-XXXXXX-default-rtdb.firebaseio.com",
+            projectId: "XXXX-XXXXXX",
+            storageBucket: "XXXX-XXXXXX.appspot.com",
+            messagingSenderId: "XXXXXXXXXXXX",
+            appId: "X:XXXXXXXXXXXX:web:XXXXXXXXXXXXXXXXXXXXXX"
+        };
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app); //RealtimeDBに接続
+        let shop_bag = [];
+        localStorage.setItem("ittr_count", 0);
+
+        $("#jan").on("change",function(){
+            const jan=$("#jan").text();
+            alert(jan+"を読み込みました。");
+            if(jan==""){
+                alert("検索エラー: 検索するJANコードを入力してください");
+            } else{
+                const dbRef = ref(getDatabase());
+                get(child(dbRef, `items/${jan}`)).then((snapshot) => {
+                    console.log(snapshot)
+                    if (snapshot.exists()) {
+
+                        const item_desc = snapshot.val().desc;
+                        const item_price = Number(snapshot.val().price);
+
+                        const b_key = "set_budget";
+                        let budget = Number(localStorage.getItem(b_key));
+                        const c_key = "ittr_count";
+                        let count = Number(localStorage.getItem(c_key));
+                        
+
+                        if(confirm(`買い物かごに入れますか？\n　コード:${jan}\n　商品名:${item_desc}\n　金額：　${item_price.toLocaleString()}円`)){
+                            //end_application();
+                            if(budget>0){
+                                budget-=item_price;
+                            } else{
+                                budget+=item_price;
+                            }
+                            count+=1;
+                            localStorage.setItem(c_key, count);
+                            localStorage.setItem(b_key, budget);
+
+                            shop_bag.push([
+                                jan,
+                                item_desc,
+                                item_price
+                            ]);
+
+                            const round_budget=Math.floor(budget/10)*10;
+
+                            $("#budget").html(`<p>残り距離：${round_budget.toLocaleString()}¥ards (${count}打目)</p>`);
+                            if(budget<0){
+                                $("#budget").css("color","red");
+                            }
+                        }
+
+                        if(budget==0){
+                            end_application(count);
+                        }
+
+                        let inner_html = "<tr><th>JAN</th><th>品名</th><th>価格</th><tr>";
+                        
+                        for(let arr of shop_bag){
+                            inner_html += `<tr><td>${arr[0]}</td><td>${arr[1]}</td><td>${arr[2]}</td></tr>`;
+                        }
+
+                        $("#shopping_list").html(`<table>${inner_html}</table>`);
+                        
+                    } else {
+                        console.log("No data available");
+                        alert(`${jan}は登録されていません`);
+                    }
+                    }).catch((error) => {
+                    console.error(error);
+                });
+            }
+        })
+
+    </script>
+
+
+    <footer>
+        おかいものゴルフ 〜 Special Thanks -  
+        <a href="https://ameblo.jp/white-rabbit-0925/entry-12579659224.html">
+        QuaggaJSを使ったバーコードリーダ
+        </a>
+    </footer>
+    
+</body>
+</html>
